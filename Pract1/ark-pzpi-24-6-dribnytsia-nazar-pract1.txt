@@ -98,7 +98,7 @@
 ДОДАТОК В
 Програмний код
 В.1 Приклад оформлення іменування ідентифікаторів
-GitHub репозиторій: {посилання на файл коду в репозиторії буде додано після завантаження}
+GitHub репозиторій: https://github.com/NureDribnytsiaNazar/ark-pzpi-24-6-dribnytsia-nazar/blob/2f7d0513c6d7ff131a8b19836501a9ebc75c8199/Pract1/pzpi-24-6-dribnytsia-nazar-pract1/code-examples-code-conventions.py#L21-L31
  1  # Погано
  2  x = 20
  3  def f(n): ...
@@ -108,7 +108,7 @@ GitHub репозиторій: {посилання на файл коду в р�
  7  def calculate_discount(price):
  8      ...
 В.2 Приклад форматування коду
-GitHub репозиторій: {посилання на файл коду в репозиторії буде додано після завантаження}
+GitHub репозиторій: https://github.com/NureDribnytsiaNazar/ark-pzpi-24-6-dribnytsia-nazar/blob/2f7d0513c6d7ff131a8b19836501a9ebc75c8199/Pract1/pzpi-24-6-dribnytsia-nazar-pract1/code-examples-code-conventions.py#L34-L45
  1  # Погано
  2  def f(a,b) :
  3    result=a+b
@@ -119,7 +119,7 @@ GitHub репозиторій: {посилання на файл коду в р�
  8      result = a + b
  9      return result
 В.3 Приклад документування функції (docstring, type hints)
-GitHub репозиторій: {посилання на файл коду в репозиторії буде додано після завантаження}
+GitHub репозиторій: https://github.com/NureDribnytsiaNazar/ark-pzpi-24-6-dribnytsia-nazar/blob/2f7d0513c6d7ff131a8b19836501a9ebc75c8199/Pract1/pzpi-24-6-dribnytsia-nazar-pract1/code-examples-code-conventions.py#L48-L61
  1  def convert_currency(amount: float, rate: float) -> float:
  2      """Конвертує суму за заданим курсом.
  3  
@@ -132,7 +132,7 @@ GitHub репозиторій: {посилання на файл коду в р�
 10      """
 11      return amount * rate
 В.4 Приклад обробки винятків
-GitHub репозиторій: {посилання на файл коду в репозиторії буде додано після завантаження}
+GitHub репозиторій: https://github.com/NureDribnytsiaNazar/ark-pzpi-24-6-dribnytsia-nazar/blob/2f7d0513c6d7ff131a8b19836501a9ebc75c8199/Pract1/pzpi-24-6-dribnytsia-nazar-pract1/code-examples-code-conventions.py#L64-L81
  1  # Погано
  2  try:
  3      value = data[key]
@@ -145,7 +145,7 @@ GitHub репозиторій: {посилання на файл коду в р�
 10  except KeyError:
 11      logger.warning(f"Ключ {key} відсутній")
 В.5 Приклад ідіоматичних конструкцій (Pythonic-прийоми)
-GitHub репозиторій: {посилання на файл коду в репозиторії буде додано після завантаження}
+GitHub репозиторій: https://github.com/NureDribnytsiaNazar/ark-pzpi-24-6-dribnytsia-nazar/blob/2f7d0513c6d7ff131a8b19836501a9ebc75c8199/Pract1/pzpi-24-6-dribnytsia-nazar-pract1/code-examples-code-conventions.py#L84-L103
  1  # Погано
  2  squares = []
  3  for i in range(10):
