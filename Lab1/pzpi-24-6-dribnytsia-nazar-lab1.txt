@@ -4,7 +4,7 @@ for
 
 Оберіг
 
-Version 1.0 approved
+Version 1.1 approved
 
 Prepared by Dribnytsia Nazar
 
