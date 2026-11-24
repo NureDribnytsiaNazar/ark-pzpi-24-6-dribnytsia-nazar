@@ -1,0 +1,717 @@
+МІНІСТЕРСТВО ОСВІТИ І НАУКИ УКРАЇНИ
+
+Харківський національний університет радіоелектроніки
+
+Факультет комп'ютерних наук
+
+Катедра програмної інженерії
+
+ЗВІТ
+
+до практичного завдання № 2 з навчальної дисципліни «Аналіз та рефакторинг коду програмного забезпечення»
+
+на тему: «Методи рефакторингу коду програмного забезпечення»
+
+  Виконав
+
+  ст. гр. ПЗПІ-24-6
+
+  Дрібниця Назар Сергійович
+
+  Перевірив
+
+  ст. викладач катедри ПІ
+
+  Сокорчук Ігор Петрович
+
+Харків 2026
+
+ЗМІСТ
+
+ІСТОРІЯ ЗМІН 3
+
+1 ЗАВДАННЯ 4
+
+2 ОПИС ВИКОНАНОЇ РОБОТИ 5
+
+  2.1 Поняття рефакторингу 5
+
+  2.2 Вихідний код і вибір методів 5
+
+  2.3 Метод Extract Method 5
+
+  2.4 Метод Substitute Algorithm 6
+
+  2.5 Метод Move Method 7
+
+  2.6 Порівняння методів 7
+
+ВИСНОВКИ 9
+
+ПЕРЕЛІК ДЖЕРЕЛ ПОСИЛАННЯ 10
+
+ДОДАТОК А Відеозапис доповіді 11
+
+ДОДАТОК Б Слайди презентації 12
+
+ДОДАТОК В Програмний код 21
+
+ІСТОРІЯ ЗМІН
+
+Таблиця 1 – Історія змін документа
+
+  ---------------------------------------------------------------------------------------------------------------------------------
+  № з/п   Дата         Опис внесених змін                                                                          Автор
+  ------- ------------ ------------------------------------------------------------------------------------------- ----------------
+  1       19.11.2026   Створення первинної версії звіту до практичного завдання № 2                                Дрібниця Н. С.
+
+  2       22.11.2026   Переоформлення звіту згідно з ДСТУ 3008:2015, оновлення презентації та посилань на слайди   Дрібниця Н. С.
+  ---------------------------------------------------------------------------------------------------------------------------------
+
+1 ЗАВДАННЯ
+
+Підготувати доповідь на тему «Методи рефакторингу коду програмного забезпечення» відповідно до методичних вказівок до практичних занять з навчальної дисципліни «Аналіз та рефакторинг коду програмного забезпечення»:
+
+– обрати три методи рефакторингу з книги М. Фаулера [1]; для кожного навести код без рефакторингу та код із застосованим методом на прикладі власної програми;
+
+– підготувати презентацію обсягом не менше 10 слайдів без урахування титульного слайда та списку використаних джерел, викладену українською мовою; слайди пронумеровані, кожен слайд, окрім рисунків, супроводжується коротким пояснювальним текстом;
+
+– підготувати відеозапис доповіді тривалістю 10–15 хвилин українською мовою голосом студента, завантажити його на YouTube-канал облікового запису в домені @nure.ua та навести хронологічний опис фрагментів відео; здійснити захист доповіді під час відеоконференції у Google Meet;
+
+– оформити звіт до практичного завдання відповідно до вимог ДСТУ 3008:2015 «Інформація та документація. Звіти у сфері науки і техніки. Структура та правила оформлювання»;
+
+– експортувати звіт у форматах PDF та TXT (кодування UTF-8) і завантажити відповідно на платформу dl.nure.ua та в репозиторій GitHub.
+
+2 ОПИС ВИКОНАНОЇ РОБОТИ
+
+2.1 Поняття рефакторингу
+
+Титульний слайд і план доповіді наведено на рисунках Б.1 і Б.2. Рефакторинг, за визначенням М. Фаулера [1], це зміна внутрішньої будови програми, яка полегшує її розуміння та подальшу модифікацію й не змінює видимої поведінки (рисунок Б.3). Його виконують малими кроками, і після кожного кроку запускають автоматичні тести: без них неможливо довести, що поведінка збереглася. Рефакторинг не додає нових функцій, а готує код до їх додавання.
+
+У проєкті «Оберіг» такою страхувальною сіткою служать 146 автоматичних тестів pytest і перевірки black, flake8 та mypy [3]. Саме завдяки їм три розглянуті нижче зміни виконувалися без ризику непомітно порушити роботу сервера.
+
+2.2 Вихідний код і вибір методів
+
+Усі приклади взято з власного проєкту «Оберіг», серверної частини системи безпеки житла (Python, FastAPI, SQLAlchemy, PostgreSQL) [3]; див. рисунок Б.4. Код «до» належить лабораторній роботі № 2 (коміт af4334d), код «після» лабораторній роботі № 3 (коміт 189a5d9). Між цими комітами є 8 комітів, у каталозі app і міграціях змінено 39 файлів.
+
+Обрано три методи, які не залежать від мови програмування: Extract Method (виділення методу), Substitute Algorithm (заміна алгоритму) та Move Method (перенесення методу). Для кожного в додатку В наведено код до і після з посиланнями на конкретні рядки у GitHub.
+
+2.3 Метод Extract Method
+
+Метод застосовують, коли функція довга й виконує кілька дій, а окремі її частини хочеться пояснити коментарем. Такий фрагмент виносять у нову функцію з іменем, що говорить про її призначення; потрібні змінні передають параметрами, фрагмент замінюють викликом, після чого запускають тести (рисунок Б.5).
+
+У лабораторній роботі № 2 функція ingest_events у файлі device.py (рядки 35–81, лістинг В.1) приймала пакет подій вузла. Тіло її циклу водночас шукало датчик за каналом, будувало SQL-запит із обробкою конфлікту, відсіювало дублікат і викликало заглушку тривоги для події втручання в корпус (рисунок Б.6). Щоб зрозуміти одну з цих дій, треба було прочитати всі чотири, а додавання вікна усунення дублікатів та індексу достовірності зробило б функцію нечитабельною.
+
+Після рефакторингу (файл processor.py, лістинги В.2 і В.3, рисунок Б.7) цикл лише викликає функцію _process_reading, яка послідовно перевіряє дублікат (_is_stored_duplicate), записує подію (_store_event), оцінює її ядром конвеєра (evaluate) і застосовує рішення (_apply_decision). Заглушку події втручання в корпус замінив загальний виклик evaluate, структура циклу лишилася тією самою.
+
+Замість однієї функції на 47 рядків із чотирма обов’язками тепер п’ять функцій довжиною від 17 до 34 рядків: ingest_batch, _process_reading, _store_event, _is_stored_duplicate, _apply_decision (рисунок Б.8). Правила перевірки дубліката можна змінювати, не чіпаючи запис події, а кожен крок можна перевіряти окремим тестом.
+
+2.4 Метод Substitute Algorithm
+
+Метод застосовують, коли задачу можна розв’язати простішим алгоритмом, ніж реалізовано. Алгоритм не латають, а замінюють цілком: новий має давати ті самі результати на всіх наявних тестах, після чого старий код видаляють (рисунок Б.9).
+
+У лабораторній роботі № 2 (файл arming.py, лістинг В.4, рисунок Б.10) допустимі переходи між режимами охорони були розкидані по коду: множина DISARMABLE_MODES, функція arm_target з ланцюжком умов if і окрема перевірка у функції зняття з охорони. Недопустимий перехід в одних місцях відхилявся, а в інших виконувався. У лабораторній роботі № 3 до режимів додалися спрацювання датчиків і таймери затримок, тому дописувати нові гілки в кількох місцях було б ненадійно.
+
+Після рефакторингу (файл state_machine.py, лістинг В.5, рисунок Б.11) усі переходи описано словником TRANSITIONS, ключем якого є пара «поточний режим, тригер», а значенням новий режим. Функція next_mode шукає пару в словнику й для відсутньої пари піднімає помилку 409 invalid_transition. Нульові затримки обробляє окрема невелика таблиця, а не нові умови.
+
+Правила переходів тепер зосереджені в одному місці й використовуються API, обробкою подій від датчиків, фоновим таймером та відтворенням тестових сценаріїв (рисунок Б.12). Новий перехід додається одним рядком. Недолік: словник менш наочний для людини, яка бачить код уперше, тому у звіті до лабораторної роботи № 3 наведено таблицю переходів.
+
+2.5 Метод Move Method
+
+Метод застосовують, коли функція працює переважно з даними іншого класу чи модуля, а не того, де розміщена. Фаулер називає це «заздрістю до чужих даних» (feature envy). Функцію переносять до її даних, а у старому місці видаляють або замінюють викликом (рисунок Б.13).
+
+У лабораторній роботі № 2 приватна функція _mark_online лежала в модулі прийому подій device.py (рядки 98–100, лістинг В.6). Вона записувала час останнього зв’язку вузла й ставила йому статус online, тобто працювала лише з полями вузла. Після перенесення (файл nodes.py, лістинг В.7, рисунок Б.14) вона називається mark_seen, приймає час параметром і записує службову подію node_online, коли вузол, що був недоступним, повертається на зв’язок.
+
+У модулі nodes.py тепер зібрано всю логіку доступності вузла: mark_seen і detect_offline (рисунок Б.15). Час передається параметром, тому в тестах не потрібно підміняти годинник, а подія node_online створюється один раз на кожне повернення зв’язку. Це найменший із трьох прикладів, але перенесення стало підготовкою до більшої зміни: нова поведінка з’явилася в функції, яка вже лежала в потрібному модулі.
+
+2.6 Порівняння методів
+
+Extract Method використовують найчастіше, ризик у нього мінімальний, а ціна полягає в більшій кількості функцій і потребі в точних іменах. Substitute Algorithm дає найбільший ефект, коли правил багато й вони зростають, але вимагає тестів на всі старі випадки. Move Method змінює структуру модулів, тому після нього перевіряють імпорти й залежності (рисунок Б.16). На практиці методи застосовують у такому порядку: спочатку Extract Method, потім, якщо виділені функції містять складну розгалужену логіку, Substitute Algorithm; Move Method часто виникає сам, коли після виділення стає видно, що функція лежить не в тому модулі.
+
+Результати порівняння зведено в таблиці 2.
+
+Таблиця 2 – Порівняння трьох методів рефакторингу
+
+  ----------------------------------------------------------------------------------------------------------------------------------------------------
+  Метод                  Ознака в коді                                Результат у проєкті                       Ціна та ризик
+  ---------------------- -------------------------------------------- ----------------------------------------- --------------------------------------
+  Extract Method         Довга функція з кількома обов’язками         Функції по 17–34 рядки, кроки з іменами   Більше функцій, потрібні точні імена
+
+  Substitute Algorithm   Розгалуження розкидані по коду і зростають   Усі переходи в одній таблиці              Потрібні тести на всі старі випадки
+
+  Move Method            Метод працює лише з чужими даними            Логіка вузла в одному модулі              Зміни імпортів і залежностей
+  ----------------------------------------------------------------------------------------------------------------------------------------------------
+
+ВИСНОВКИ
+
+У результаті виконання практичного завдання розглянуто три методи рефакторингу з книги Фаулера [1] та показано їх застосування на коді власного проєкту «Оберіг»: Extract Method, Substitute Algorithm і Move Method.
+
+Extract Method розділив функцію прийому подій на 47 рядків на п’ять функцій по 17–34 рядки. Substitute Algorithm звів правила переходів між режимами охорони з трьох місць в одну таблицю. Move Method зібрав облік зв’язку з вузлом в одному модулі разом із виявленням недоступних вузлів.
+
+Зміни виконувалися під захистом 146 автоматичних тестів і перевірок black, flake8, mypy. Рефакторинг у проєкті виконувався одночасно з реалізацією нової логіки лабораторної роботи № 3, тому окремих вимірювань «до» і «після» без нової функціональності немає; порівняння наведено за структурою коду (кількість і довжина функцій, кількість місць із правилами).
+
+Отримано навички визначення ознак, що вказують на потребу в кожному методі, і безпечного виконання змін малими кроками. Викладені прийоми плановано застосовувати під час подальшої роботи над проєктом «Оберіг». Висновки та перелік джерел подано на слайдах (рисунки Б.17 і Б.18).
+
+ПЕРЕЛІК ДЖЕРЕЛ ПОСИЛАННЯ
+
+1. Fowler M. Refactoring: Improving the Design of Existing Code. Boston : Addison-Wesley Professional, 1999. 464 p.
+
+2. Refactoring Catalog. URL: https://refactoring.com/catalog/ (дата звернення: 19.11.2026).
+
+3. oberih: серверна частина системи «Оберіг». GitHub. URL: https://github.com/NureDribnytsiaNazar/oberih (дата звернення: 19.11.2026).
+
+ДОДАТОК А
+
+Відеозапис доповіді
+
+Відеозапис доповіді: https://youtu.be/6HAjARCLeFo
+
+Хронологічний опис відеозапису:
+
+– 00:00 – Вступ, тема доповіді та план
+
+– 00:50 – Що таке рефакторинг, проєкт «Оберіг» і джерело прикладів
+
+– 02:33 – Метод Extract Method: суть, код до і після, результат
+
+– 05:21 – Метод Substitute Algorithm: суть, код до і після, результат
+
+– 07:57 – Метод Move Method: суть, код до і після, результат
+
+– 09:59 – Порівняння методів
+
+– 11:01 – Висновки
+
+– 11:40 – Перелік використаних джерел
+
+ДОДАТОК Б
+
+Слайди презентації
+
+[]
+
+Рисунок Б.1 – Титульний слайд доповіді
+
+[]
+
+Рисунок Б.2 – План доповіді
+
+[]
+
+Рисунок Б.3 – Що таке рефакторинг
+
+[]
+
+Рисунок Б.4 – Звідки взято код
+
+[]
+
+Рисунок Б.5 – Метод 1. Extract Method
+
+[]
+
+Рисунок Б.6 – Extract Method: код до
+
+[]
+
+Рисунок Б.7 – Extract Method: код після
+
+[]
+
+Рисунок Б.8 – Extract Method: результат
+
+[]
+
+Рисунок Б.9 – Метод 2. Substitute Algorithm
+
+[]
+
+Рисунок Б.10 – Substitute Algorithm: код до
+
+[]
+
+Рисунок Б.11 – Substitute Algorithm: код після
+
+[]
+
+Рисунок Б.12 – Substitute Algorithm: результат
+
+[]
+
+Рисунок Б.13 – Метод 3. Move Method
+
+[]
+
+Рисунок Б.14 – Move Method: код до і після
+
+[]
+
+Рисунок Б.15 – Move Method: результат
+
+[]
+
+Рисунок Б.16 – Порівняння трьох методів
+
+[]
+
+Рисунок Б.17 – Висновки
+
+[]
+
+Рисунок Б.18 – Перелік джерел
+
+ДОДАТОК В
+
+Програмний код
+
+Лістинг В.1 – Extract Method: код до рефакторингу (функція ingest_events)
+
+GitHub-репозиторій: https://github.com/NureDribnytsiaNazar/oberih/blob/af4334d1af874293057633b342b64645c719190a/server/app/services/device.py#L35-L81
+
+1 def ingest_events(
+
+2 db: Session, node: Node, batch: DeviceEventBatch
+
+3 ) -> DeviceEventsResult:
+
+4 """Записує пакет подій вузла; повторні події не створюють нових записів.
+
+5
+
+6 Пакет обробляється атомарно: якщо хоча б одна подія містить невідомий
+
+7 канал, не записується жодна.
+
+8 """
+
+9 sensors = {
+
+10 sensor.channel: sensor
+
+11 for sensor in db.scalars(select(Sensor).where(Sensor.node_id == node.id))
+
+12 }
+
+13 if any(item.channel not in sensors for item in batch.events):
+
+14 raise BadRequestError("unknown_channel")
+
+15
+
+16 accepted = 0
+
+17 for item in sorted(batch.events, key=lambda event: event.seq):
+
+18 sensor = sensors[item.channel]
+
+19 stmt = (
+
+20 insert(Event)
+
+21 .values(
+
+22 facility_id=node.facility_id,
+
+23 node_id=node.id,
+
+24 sensor_id=sensor.id,
+
+25 event_type=item.event_type,
+
+26 seq=item.seq,
+
+27 occurred_at=item.occurred_at,
+
+28 payload=item.payload,
+
+29 )
+
+30 .on_conflict_do_nothing(constraint="uq_events_dedup_key")
+
+31 .returning(Event.id)
+
+32 )
+
+33 event_id = db.scalar(stmt)
+
+34 if event_id is None:
+
+35 continue # дублікат: таку подію вже записано раніше
+
+36 accepted += 1
+
+37 if item.event_type == EventType.TAMPER:
+
+38 _tamper_alarm_stub(db, node, sensor, event_id)
+
+39
+
+40 _mark_online(node)
+
+41 node.last_seq = max(node.last_seq, *(item.seq for item in batch.events))
+
+42 db.commit()
+
+43 return DeviceEventsResult(
+
+44 accepted=accepted,
+
+45 duplicates=len(batch.events) - accepted,
+
+46 last_seq=node.last_seq,
+
+47 )
+
+Лістинг В.2 – Extract Method: код після рефакторингу (функції ingest_batch і _process_reading)
+
+GitHub-репозиторій: https://github.com/NureDribnytsiaNazar/oberih/blob/189a5d9e0ba5c7f812848b82a8df4d1689dbd124/server/app/services/pipeline/processor.py#L39-L98
+
+1 def ingest_batch(
+
+2 db: Session, node: Node, batch: DeviceEventBatch, now: datetime | None = None
+
+3 ) -> DeviceEventsResult:
+
+4 """Обробляє пакет подій вузла атомарно (одна транзакція).
+
+5
+
+6 Якщо хоча б одна подія містить невідомий канал, не записується жодна.
+
+7 """
+
+8 now = now or datetime.now(UTC)
+
+9 facility = db.get_one(Facility, node.facility_id)
+
+10 sensors = _sensor_refs(db, node)
+
+11 if any(item.channel not in sensors for item in batch.events):
+
+12 raise BadRequestError("unknown_channel")
+
+13
+
+14 settings = RuleSettings.from_model(facility.settings)
+
+15 arming.apply_due_timer(db, facility, now)
+
+16 nodes.mark_seen(db, node, now)
+
+17
+
+18 results = []
+
+19 for item in sorted(batch.events, key=lambda event: (event.occurred_at, event.seq)):
+
+20 reading = _reading(item, sensors[item.channel])
+
+21 status = _process_reading(db, node, facility, reading, item, settings, now)
+
+22 results.append(
+
+23 DeviceEventResult(seq=item.seq, channel=item.channel, status=status)
+
+24 )
+
+25
+
+26 node.last_seq = max(node.last_seq, *(item.seq for item in batch.events))
+
+27 db.commit()
+
+28 accepted = sum(1 for result in results if result.status == "accepted")
+
+29 return DeviceEventsResult(
+
+30 accepted=accepted,
+
+31 duplicates=len(results) - accepted,
+
+32 last_seq=node.last_seq,
+
+33 results=results,
+
+34 )
+
+35
+
+36
+
+37 def _process_reading(
+
+38 db: Session,
+
+39 node: Node,
+
+40 facility: Facility,
+
+41 reading: Reading,
+
+42 item: DeviceEventIn,
+
+43 settings: RuleSettings,
+
+44 now: datetime,
+
+45 ) -> str:
+
+46 """Кроки 2–6 для однієї події. Повертає accepted або duplicate."""
+
+47 if _is_stored_duplicate(db, reading, settings):
+
+48 return "duplicate"
+
+49 event_id = _store_event(db, node, reading, item)
+
+50 if event_id is None:
+
+51 return "duplicate" # паралельний запис тієї самої події
+
+52 decision = evaluate(
+
+53 reading,
+
+54 facility.mode,
+
+55 _recent_triggers(db, facility, reading, settings),
+
+56 settings,
+
+57 )
+
+58 if decision is not None:
+
+59 _apply_decision(db, facility, reading, decision, event_id, now)
+
+60 return "accepted"
+
+Лістинг В.3 – Extract Method: допоміжні функції після рефакторингу (_is_stored_duplicate і _store_event)
+
+GitHub-репозиторій: https://github.com/NureDribnytsiaNazar/oberih/blob/189a5d9e0ba5c7f812848b82a8df4d1689dbd124/server/app/services/pipeline/processor.py#L139-L177
+
+1 def _is_stored_duplicate(db: Session, reading: Reading, settings: RuleSettings) -> bool:
+
+2 """Чи є в архіві та сама подія за номером або в межах вікна Δ(дубл.)."""
+
+3 window = settings.duplicate_window
+
+4 found = db.scalar(
+
+5 select(Event.id)
+
+6 .where(
+
+7 Event.sensor_id == reading.sensor.sensor_id,
+
+8 Event.event_type == reading.event_type,
+
+9 or_(
+
+10 Event.seq == reading.seq,
+
+11 # Строга нерівність: |t(e) − t(e')| < Δ(дубл.).
+
+12 (Event.occurred_at > reading.occurred_at - window)
+
+13 & (Event.occurred_at < reading.occurred_at + window),
+
+14 ),
+
+15 )
+
+16 .limit(1)
+
+17 )
+
+18 return found is not None
+
+19
+
+20
+
+21 def _store_event(
+
+22 db: Session, node: Node, reading: Reading, item: DeviceEventIn
+
+23 ) -> int | None:
+
+24 """Записує подію з початковою міткою часу вузла (UTC)."""
+
+25 stmt = (
+
+26 insert(Event)
+
+27 .values(
+
+28 facility_id=node.facility_id,
+
+29 node_id=node.id,
+
+30 sensor_id=reading.sensor.sensor_id,
+
+31 event_type=reading.event_type,
+
+32 seq=reading.seq,
+
+33 occurred_at=reading.occurred_at,
+
+34 payload=item.payload,
+
+35 )
+
+36 .on_conflict_do_nothing(constraint="uq_events_dedup_key")
+
+37 .returning(Event.id)
+
+38 )
+
+39 return db.scalar(stmt)
+
+Лістинг В.4 – Substitute Algorithm: код до рефакторингу (множина DISARMABLE_MODES і функція arm_target)
+
+GitHub-репозиторій: https://github.com/NureDribnytsiaNazar/oberih/blob/af4334d1af874293057633b342b64645c719190a/server/app/services/arming.py#L28-L47
+
+1 DISARMABLE_MODES = {
+
+2 FacilityMode.EXIT_DELAY,
+
+3 FacilityMode.ARMED_AWAY,
+
+4 FacilityMode.ARMED_HOME,
+
+5 FacilityMode.ENTRY_DELAY,
+
+6 FacilityMode.ALARM,
+
+7 }
+
+8
+
+9
+
+10 def arm_target(current: FacilityMode, mode: ArmMode, exit_delay_s: int) -> FacilityMode:
+
+11 """Режим, у який переходить об'єкт після команди постановки."""
+
+12 if current != FacilityMode.DISARMED:
+
+13 raise ConflictError("invalid_transition")
+
+14 if mode == ArmMode.HOME:
+
+15 # Режим «Вдома» вмикається без затримки виходу.
+
+16 return FacilityMode.ARMED_HOME
+
+17 if exit_delay_s > 0:
+
+18 return FacilityMode.EXIT_DELAY
+
+19 return FacilityMode.ARMED_AWAY
+
+20
+
+Лістинг В.5 – Substitute Algorithm: код після рефакторингу (таблиця TRANSITIONS і функція next_mode)
+
+GitHub-репозиторій: https://github.com/NureDribnytsiaNazar/oberih/blob/189a5d9e0ba5c7f812848b82a8df4d1689dbd124/server/app/services/state_machine.py#L39-L71
+
+1 # (поточний режим, тригер) -> новий режим. Відсутня пара — недопустимий перехід.
+
+2 TRANSITIONS: dict[tuple[FacilityMode, ModeTrigger], FacilityMode] = {
+
+3 (FacilityMode.DISARMED, ModeTrigger.ARM_AWAY): FacilityMode.EXIT_DELAY,
+
+4 (FacilityMode.DISARMED, ModeTrigger.ARM_HOME): FacilityMode.ARMED_HOME,
+
+5 (FacilityMode.EXIT_DELAY, ModeTrigger.EXIT_DELAY_EXPIRED): FacilityMode.ARMED_AWAY,
+
+6 (FacilityMode.ARMED_AWAY, ModeTrigger.INTRUSION): FacilityMode.ENTRY_DELAY,
+
+7 (FacilityMode.ARMED_HOME, ModeTrigger.INTRUSION): FacilityMode.ENTRY_DELAY,
+
+8 (FacilityMode.ENTRY_DELAY, ModeTrigger.ENTRY_DELAY_EXPIRED): FacilityMode.ALARM,
+
+9 **{(mode, ModeTrigger.DISARM): FacilityMode.DISARMED for mode in DISARMABLE_MODES},
+
+10 **{(mode, ModeTrigger.INSTANT_ALARM): FacilityMode.ALARM for mode in FacilityMode},
+
+11 }
+
+12
+
+13 # Стан затримки та стан, у який об'єкт переходить, коли затримка нульова.
+
+14 _DELAY_SKIP = {
+
+15 FacilityMode.EXIT_DELAY: FacilityMode.ARMED_AWAY,
+
+16 FacilityMode.ENTRY_DELAY: FacilityMode.ALARM,
+
+17 }
+
+18
+
+19
+
+20 def next_mode(
+
+21 current: FacilityMode, trigger: ModeTrigger, delay_s: int = 0
+
+22 ) -> FacilityMode:
+
+23 """Новий режим після тригера.
+
+24
+
+25 delay_s — тривалість затримки, у яку веде перехід (виходу чи входу);
+
+26 якщо вона нульова, стан затримки пропускається.
+
+27 """
+
+28 target = TRANSITIONS.get((current, trigger))
+
+29 if target is None:
+
+30 raise ConflictError("invalid_transition")
+
+31 if target in _DELAY_SKIP and delay_s <= 0:
+
+32 return _DELAY_SKIP[target]
+
+33 return target
+
+Лістинг В.6 – Move Method: код до рефакторингу (функція _mark_online)
+
+GitHub-репозиторій: https://github.com/NureDribnytsiaNazar/oberih/blob/af4334d1af874293057633b342b64645c719190a/server/app/services/device.py#L98-L100
+
+1 def _mark_online(node: Node) -> None:
+
+2 node.last_seen_at = datetime.now(UTC)
+
+3 node.status = NodeStatus.ONLINE
+
+Лістинг В.7 – Move Method: код після рефакторингу (функція mark_seen)
+
+GitHub-репозиторій: https://github.com/NureDribnytsiaNazar/oberih/blob/189a5d9e0ba5c7f812848b82a8df4d1689dbd124/server/app/services/nodes.py#L19-L28
+
+1 def mark_seen(db: Session, node: Node, now: datetime | None = None) -> None:
+
+2 """Вузол на зв'язку: оновлює час і повертає статус online.
+
+3
+
+4 Якщо вузол був недоступний, архівується подія node_online.
+
+5 """
+
+6 now = now or datetime.now(UTC)
+
+7 if node.status == NodeStatus.OFFLINE:
+
+8 _add_node_event(db, node, EventType.NODE_ONLINE, now)
+
+9 node.last_seen_at = now
+
+10 node.status = NodeStatus.ONLINE
